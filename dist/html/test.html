@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Building a router</title>
+
+    <script type="text/javascript" src='./static/js/App_Framework_v0.1.js'></script>
+    <script type="text/javascript" src='./static/js/App_Config_v0.1.js'></script>
+    <script   src="https://code.jquery.com/jquery-2.2.4.js"   integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="   crossorigin="anonymous"></script>
+
+
+    <script>
+
+        app_container.defineController("test_main",function(){
+            var vm = this;
+
+            vm.greeting = 'Hello world!';
+            vm.moreText = 'Bacon ipsum...';
+            vm.counter = 0;
+
+            $('div').css('background','blue');
+        });
+
+        app_container.defineController("test_main2",function(){
+            var vm = this;
+
+            vm.heading = 'I\'m page one!';
+
+
+        });
+        app_container.defineController("test_main3",function(){
+            var vm = this;
+            vm.heading = {head:'I\'m page two!',content:'This is test page'};
+
+
+
+        });
+
+        app_container.defineProvider("$routerProvider", [function(){
+
+            function TemplateEngine(html, options) {
+
+                var re = /<%(.+?)%>/g,
+                        reExp = /(^( )?(var|if|for|else|switch|case|break|{|}|;))(.*)?/g,
+                        code = 'with(obj) { var r=[];\n',
+                        cursor = 0,
+                        result;
+                var add = function(line, js) {
+                    js? (code += line.match(reExp) ? line + '\n' : 'r.push(' + line + ');\n') :
+                            (code += line != '' ? 'r.push("' + line.replace(/"/g, '\\"') + '");\n' : '');
+                    return add;
+                }
+                while(match = re.exec(html)) {
+                    console.log(match[1]);
+                    add(html.slice(cursor, match.index))(match[1], true);
+                    cursor = match.index + match[0].length;
+                }
+                add(html.substr(cursor, html.length - cursor));
+                code = (code + 'return r.join(""); }').replace(/[\r\t\n]/g, ' ');
+                console.log(code);
+                try {
+                    result = new Function('obj', code).apply(options, [options]);
+                }
+                catch(err) {
+                    console.error("'" + err.message + "'", " in \n\nCode:\n", code, "\n");
+                }
+                return result;
+            }
+
+            var routes = {'/':{templateUrl:'',controller:''}};
+            // An array of the current route's events:
+            var events = [];
+            // The element where the routes are rendered:
+            var el = null;
+
+
+            var when = function (path, route) {
+                //copy original route object to preserve params inherited from proto chain
+                var routeCopy = route;
+
+                routes[path] = $.extend(
+                        routeCopy,
+                        true
+                );
+
+                return this;
+            };
+
+            var router = function () {
+
+                // Lazy load view element:
+                el = el || document.getElementById('view');
+                // Current route url (getting rid of '#' in hash as well):
+                var url = location.hash.slice(1) || '/';
+                // Get route by url:
+                var route = routes[url];
+
+                console.log(routes);
+                // Do we have both a view and a route?
+                if (el && route['controller']) {
+                    var controller_name = route['controller'];
+
+                    var template = route['templateUrl'];
+
+                    template = template.replace('/','');
+                    // Render route template with John Resig's template engine:
+
+                    console.log(window['templateCache']);
+                    el.innerHTML = TemplateEngine(window['templateCache'][template], app_container.$runPhase.$component[controller_name].$scope);
+                }
+
+
+/*                    $.ajax({
+                        url: route['templateUrl'],
+                        async: false,
+                        success: function (result) {
+                            console.log('controller_name :'+controller_name);
+                            // Render route template with John Resig's template engine:
+                            el.innerHTML = TemplateEngine(result, app_container.$runPhase.$component[controller_name].$scope);
+                        }
+
+                    });
+                    */
+
+                }
+
+            return {
+                router:router,
+                when:when,
+                $config:[function(){
+                    return {
+                        router:router,
+                        when:when
+                }}]
+            };
+
+
+        }]);
+
+    </script>
+</head>
+<body>
+<ul>
+    <li><a href="#">Home</a></li>
+    <li><a href="#/page1">Page 1</a></li>
+    <li><a href="#/page2">Page 2</a></li>
+
+</ul>
+<div id="view"></div>
+</div>
+</body>
+
+
+</body>
+</html>

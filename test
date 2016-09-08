@@ -1,0 +1,38 @@
+app_container.defineProvider("$ButtonHandler", [function(){
+    var option = {
+        eventType: 'click',
+        callback: null
+    };
+    var ButtonHelper = {};
+    ButtonHelper.setButtonEvent = function(type, callback, elem){
+        var type;
+        if(type){
+            type = type;
+        }else{
+            //set the default eventType
+            type = option.eventType;
+        }
+
+        if(!callback && typeof callback === 'function'){
+            throw new Error("You should define callback for the button");
+        }
+
+        if(!elem){
+            throw new Error("You should select an element for the button");
+        }else if(elem.length > 1){
+            throw new Error("You should select only one element at a time");
+        }
+
+        elem.addEventListener(type, callback);
+    }
+
+    ButtonHelper.$config = [function(){
+        return {
+            getCurrentOption : function(){
+                return option;
+            }
+        };
+    }];
+    console.log(ButtonHelper);
+    return ButtonHelper;
+}]);
